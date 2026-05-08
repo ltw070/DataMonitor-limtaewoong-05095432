@@ -272,3 +272,19 @@ class TestProductionSummary:
 
         assert len(summaries) == 1
         assert summaries[0].order_no == "ORD-003"
+
+    def test_production_queue_skips_order_when_sample_not_found(self):
+        """find_by_id가 None을 반환하면 해당 주문을 건너뜀"""
+        sample_repo = MagicMock()
+        order_repo = MagicMock()
+
+        sample_repo.find_by_id.return_value = None  # 시료 없음
+        orders = [
+            make_order("ORD-001", "S999", 50, OrderStatus.PRODUCING),
+        ]
+        order_repo.find_all.return_value = orders
+
+        aggregator = MonitorAggregator(sample_repo, order_repo)
+        summaries = aggregator.production_queue_summary()
+
+        assert len(summaries) == 0
